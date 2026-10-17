@@ -52,6 +52,9 @@ type harnessOptions struct {
 	// noSigner builds a read-only service.
 	noSigner bool
 
+	// maxContractSize overrides the Service's WASM size limit.
+	maxContractSize int
+
 	// catalog replaces the SoroVault registrar.
 	catalog catalog.Registrar
 }
@@ -104,10 +107,11 @@ contracts:
 	}
 
 	svc, err := deploy.New(deploy.Options{
-		Config:  cfg,
-		Store:   memStore,
-		Signer:  signer,
-		Clients: func(string, config.Network) (stellar.Client, error) { return client, nil },
+		Config:          cfg,
+		Store:           memStore,
+		Signer:          signer,
+		Clients:         func(string, config.Network) (stellar.Client, error) { return client, nil },
+		MaxContractSize: opts.maxContractSize,
 		// Discard logs so test output stays readable.
 		Log:     slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Catalog: opts.catalog,

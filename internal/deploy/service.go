@@ -57,6 +57,9 @@ type Service struct {
 	// reach a terminal state.
 	confirmTimeout time.Duration
 
+	// maxContractSize is the largest contract WASM that will be uploaded.
+	maxContractSize int
+
 	// catalog publishes confirmed contracts to a network's sorovault_url.
 	catalog catalog.Registrar
 }
@@ -82,6 +85,11 @@ type Options struct {
 
 	// ConfirmTimeout defaults to DefaultConfirmTimeout.
 	ConfirmTimeout time.Duration
+
+	// MaxContractSize is the largest contract WASM SoroForge will upload, in
+	// bytes. Defaults to stellar.DefaultMaxContractSize; a non-positive value
+	// also selects the default, since refusing every upload is never intended.
+	MaxContractSize int
 
 	// Catalog registers confirmed deploys and upgrades with the network's
 	// sorovault_url, when one is configured. Defaults to a SoroVault HTTP
@@ -126,16 +134,21 @@ func New(opts Options) (*Service, error) {
 	if registrar == nil {
 		registrar = catalog.NewSoroVault(nil)
 	}
+	maxContractSize := opts.MaxContractSize
+	if maxContractSize <= 0 {
+		maxContractSize = stellar.DefaultMaxContractSize
+	}
 
 	return &Service{
-		cfg:            opts.Config,
-		store:          opts.Store,
-		signer:         opts.Signer,
-		clients:        clients,
-		log:            log,
-		baseFee:        baseFee,
-		confirmTimeout: confirmTimeout,
-		catalog:        registrar,
+		cfg:             opts.Config,
+		store:           opts.Store,
+		signer:          opts.Signer,
+		clients:         clients,
+		log:             log,
+		baseFee:         baseFee,
+		confirmTimeout:  confirmTimeout,
+		maxContractSize: maxContractSize,
+		catalog:         registrar,
 	}, nil
 }
 
@@ -217,8 +230,8 @@ type resolved struct {
 func (s *Service) requireSigner() (stellar.Signer, error) {
 	if s.signer == nil {
 		return nil, fmt.Errorf(
-			"no signing key configured: set %s or %s (see README security notes)",
-			config.EnvSecretKey, config.EnvKeystorePath)
+			"no signing key configured: set %s or %s, or %s with %s (see README security notes)",
+			config.EnvSecretKey, config.EnvKeystorePath, config.EnvSignerCommand, config.EnvSignerPublicKey)
 	}
 	return s.signer, nil
 }

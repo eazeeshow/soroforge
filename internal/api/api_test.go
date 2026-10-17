@@ -367,6 +367,7 @@ func TestReadEndpointsAlsoRequireAuth(t *testing.T) {
 		"/v1/contracts",
 		"/v1/contracts/testnet/counter/history",
 		"/v1/contracts/testnet/counter/status",
+		"/v1/jobs/some-job",
 	} {
 		t.Run(path, func(t *testing.T) {
 			rec := do(t, router, http.MethodGet, path, nil, &empty)
