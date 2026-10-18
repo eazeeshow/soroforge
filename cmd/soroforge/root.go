@@ -80,10 +80,12 @@ the README security notes.`,
 		newListCmd(),
 		newHistoryCmd(),
 		newStatusCmd(),
+		newNetworksCmd(),
 		newServeCmd(),
 		newMigrateCmd(),
 		newVersionCmd(),
 	)
+	registerNetworkFlagCompletion(cmd)
 
 	return cmd
 }
@@ -195,12 +197,14 @@ func newApp(ctx context.Context, opts appOptions) (*app, error) {
 			return nil, err
 		}
 
-		pg, err := store.NewPostgres(ctx, databaseURL)
+		// Open dispatches on the URL scheme: sqlite://... is the file-backed
+		// store, anything else Postgres.
+		st, err := store.Open(ctx, databaseURL)
 		if err != nil {
 			return nil, err
 		}
-		a.store = pg
-		a.closers = append(a.closers, pg.Close)
+		a.store = st
+		a.closers = append(a.closers, st.Close)
 	}
 
 	signer, err := buildSigner(cfg, opts.requireSigner)
